@@ -182,7 +182,7 @@ public class MainActivity extends AppCompatActivity implements Handler.Callback 
                             dc.send("ping");
                             long now = System.currentTimeMillis();
                             nextSendAt = nextSendAt + coolDownTime;
-                            long sleepTime = now - nextSendAt;
+                            long sleepTime = nextSendAt - now;
                             if (sleepTime > 0) {
                                 sleep(sleepTime);
                             }
