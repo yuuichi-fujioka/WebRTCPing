@@ -91,8 +91,8 @@ public class MainActivity extends AppCompatActivity implements Handler.Callback 
                         if (!(o instanceof DataConnection)) {
                             return;
                         }
-                        dc = (DataConnection) o;
-                        setUpDC();
+                        DataConnection dc = (DataConnection) o;
+                        setUpDC(dc);
                         h.sendEmptyMessage(MSG_UPDATE_VIEW);
                     }
                 });
@@ -139,8 +139,8 @@ public class MainActivity extends AppCompatActivity implements Handler.Callback 
                                 ConnectOption option = new ConnectOption();
                                 option.serialization = DataConnection.SerializationEnum.NONE; // default BINATRYとドキュメントにはあるが、指定しないとNullPointerExceptionが出る。
                                 option.reliable = false;
-                                dc = peer.connect(peerId, option);
-                                setUpDC();
+                                DataConnection dc = peer.connect(peerId, option);
+                                setUpDC(dc);
                                 h.sendEmptyMessage(MSG_UPDATE_VIEW);
                                 break;
                             }
@@ -258,7 +258,9 @@ public class MainActivity extends AppCompatActivity implements Handler.Callback 
         statusView.setText(status.toString());
     }
 
-    private void setUpDC() {
+    private void setUpDC(DataConnection dc) {
+
+        this.dc = dc;
         dc.on(DataConnection.DataEventEnum.OPEN, new OnCallback() {
             @Override
             public void onCallback(Object o) {
@@ -270,7 +272,7 @@ public class MainActivity extends AppCompatActivity implements Handler.Callback 
             @Override
             public void onCallback(Object o) {
                 Log.i(TAG, "DC is Close!");
-                dc = null;
+                MainActivity.this.dc = null;
                 h.sendEmptyMessage(MSG_UPDATE_VIEW);
             }
         });
@@ -278,7 +280,7 @@ public class MainActivity extends AppCompatActivity implements Handler.Callback 
             @Override
             public void onCallback(Object o) {
                 Log.i(TAG, "DC is Close!");
-                dc = null;
+                MainActivity.this.dc = null;
                 h.sendEmptyMessage(MSG_UPDATE_VIEW);
             }
         });
@@ -286,8 +288,8 @@ public class MainActivity extends AppCompatActivity implements Handler.Callback 
             @Override
             public void onCallback(Object o) {
                 String data = (String) o;
-                if (data.contains("ping") && dc != null) {
-                    dc.send(data.replaceAll("ping", "pong"));
+                if (data.contains("ping") && MainActivity.this.dc != null) {
+                    MainActivity.this.dc.send(data.replaceAll("ping", "pong"));
                 }
             }
         });
