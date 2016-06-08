@@ -16,4 +16,8 @@
         android:layout_height="wrap_content" android:id="@+id/Status"
         android:layout_below="@id/MyId" />
 
+    <TextView android:text="Hello World!" android:layout_width="wrap_content"
+        android:layout_height="wrap_content" android:id="@+id/RecvCount"
+        android:layout_below="@id/Status" />
+
 </RelativeLayout>

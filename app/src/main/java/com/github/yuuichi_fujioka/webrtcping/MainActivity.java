@@ -47,6 +47,12 @@ public class MainActivity extends AppCompatActivity implements Handler.Callback 
     private FloatingActionButton fabClose;
     private TextView idView;
     private TextView statusView;
+    private TextView countView;
+
+    private int recvCount = 0;
+    private int sendCount = 0;
+
+    private static final Object SEND_LOCK = new Object();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,6 +74,7 @@ public class MainActivity extends AppCompatActivity implements Handler.Callback 
         fabClose = (FloatingActionButton) findViewById(R.id.fabClose);
         idView = (TextView) findViewById(R.id.MyId);
         statusView = (TextView) findViewById(R.id.Status);
+        countView = (TextView) findViewById(R.id.RecvCount);
 
         setUpButtons();
         updateView();
@@ -170,8 +177,10 @@ public class MainActivity extends AppCompatActivity implements Handler.Callback 
 
                     private void loop() throws InterruptedException {
                         long nextSendAt = System.currentTimeMillis();
-                        long fps = 120;
+                        long fps = 30;
                         long coolDownTime = 1000 / fps;
+
+                        long lastUpdatedAt = System.currentTimeMillis();
 
                         while (!isInterrupted()) {
                             if (dc == null || !dc.isOpen) {
@@ -179,12 +188,19 @@ public class MainActivity extends AppCompatActivity implements Handler.Callback 
                                 return;
                             }
 
-                            dc.send("ping");
+                            sendCount++;
+                            synchronized (SEND_LOCK) {
+                                dc.send("ping");
+                            }
                             long now = System.currentTimeMillis();
                             nextSendAt = nextSendAt + coolDownTime;
                             long sleepTime = nextSendAt - now;
                             if (sleepTime > 0) {
                                 sleep(sleepTime);
+                            }
+                            if (now - lastUpdatedAt > 1000) {
+                                lastUpdatedAt = now;
+                                h.sendEmptyMessage(MSG_UPDATE_VIEW);
                             }
                         }
                     }
@@ -234,6 +250,7 @@ public class MainActivity extends AppCompatActivity implements Handler.Callback 
 
             idView.setText("None");
             statusView.setText("Not Connected");
+            countView.setText("");
             return;
         }
 
@@ -253,6 +270,7 @@ public class MainActivity extends AppCompatActivity implements Handler.Callback 
         } else {
             status.append("\nDC is Close");
         }
+        countView.setText(new StringBuilder().append(sendCount).append("\n").append(recvCount).toString());
 
         idView.setText(myId);
         statusView.setText(status.toString());
@@ -285,11 +303,22 @@ public class MainActivity extends AppCompatActivity implements Handler.Callback 
             }
         });
         dc.on(DataConnection.DataEventEnum.DATA, new OnCallback() {
+            private long lastUpdatedAt = System.currentTimeMillis();
+
             @Override
             public void onCallback(Object o) {
                 String data = (String) o;
                 if (data.contains("ping") && MainActivity.this.dc != null) {
-                    MainActivity.this.dc.send(data.replaceAll("ping", "pong"));
+                    recvCount++;
+
+                    synchronized (SEND_LOCK) {
+                        MainActivity.this.dc.send(data.replaceAll("ping", "pong"));
+                    }
+                    long now = System.currentTimeMillis();
+                    if (now - lastUpdatedAt > 1000) {
+                        lastUpdatedAt = now;
+                        h.sendEmptyMessage(MSG_UPDATE_VIEW);
+                    }
                 }
             }
         });
