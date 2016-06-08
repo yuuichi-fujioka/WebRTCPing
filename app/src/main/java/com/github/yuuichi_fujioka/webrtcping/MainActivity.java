@@ -169,18 +169,20 @@ public class MainActivity extends AppCompatActivity implements Handler.Callback 
                     }
 
                     private void loop() throws InterruptedException {
-                        long lastSendAt = System.currentTimeMillis();
+                        long nextSendAt = System.currentTimeMillis();
                         long fps = 120;
                         long coolDownTime = 1000 / fps;
+
                         while (!isInterrupted()) {
                             if (dc == null || !dc.isOpen) {
                                 Log.e(TAG, "DC has Dead!");
                                 return;
                             }
+
                             dc.send("ping");
                             long now = System.currentTimeMillis();
-                            long sleepTime = coolDownTime - (now - lastSendAt);
-                            lastSendAt = now;
+                            nextSendAt = nextSendAt + coolDownTime;
+                            long sleepTime = now - nextSendAt;
                             if (sleepTime > 0) {
                                 sleep(sleepTime);
                             }
